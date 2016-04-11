@@ -1,16 +1,14 @@
 extern crate discord;
 extern crate markov;
 
-use discord::Discord;
-use discord::model::Event;
+use discord::{Discord, ChannelRef, State};
+use discord::model::{Event, ChannelType};
 use markov::Chain;
 
-fn main() {
-    let discord = Discord::from_bot_token(
-        "MTY4ODQ4MTQwODYxMDQ2Nzg0.CexjlQ.OTmVLXOLzShEizIVhZa_KnpSIts"
-    )
-        .expect("Couldn't log in dude.");
+const BOT_TOKEN = "MTY4ODY2MDQ5NjI0NzY4NTEy.Cex0Qw.RyZsacSKKKxpiVtAZ6JueJwTeMQ";
 
+fn main() {
+    println!("connecting?");
     let (mut connection, _) = discord.connect().expect("Connection failed.");
     println!("Here we go");
     loop {
@@ -20,12 +18,9 @@ fn main() {
             }
 
             Ok(_) => {}
-            Err(discord::Error::Closed(code, body)) => {
-                println!("Connection closed {:?}: {}", code, String::from_utf8_lossy(&body));
-            }
             Err(e) => println!("Error {:?}", e)
         }
     }
 
-    discord.logout.unwrap();
+    discord.logout().unwrap();
 }

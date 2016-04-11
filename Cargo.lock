@@ -3,6 +3,7 @@ name = "resmus"
 version = "0.1.0"
 dependencies = [
  "discord 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "markov 0.0.32 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
