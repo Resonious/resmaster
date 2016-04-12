@@ -1,9 +1,0 @@
-[package]
-name = "resmus"
-version = "0.1.0"
-authors = ["Nigel Baillie <metreckk@gmail.com>"]
-
-[dependencies]
-markov = "*"
-hyper = "*"
-websocket = "*"
