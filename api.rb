@@ -72,6 +72,10 @@ module Api
     "data:image/jpeg;base64,#{Base64.strict_encode64(file_bytes)}"
   end
 
+  def gateway_url
+    @gateway_url ||= get('/gateway').url
+  end
+
   protected
 
   def process_data(data)
