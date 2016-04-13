@@ -1,8 +1,39 @@
 require 'net/http'
 require 'json'
-require 'recursive_open_struct'
 require 'base64'
 require 'websocket-client-simple'
+
+class RStruct
+  def self.wrap(x)
+    return x unless x.is_a?(Hash)
+    new(x.to_h)
+  end
+
+  def def_val(key, val)
+    @values[key] = val.is_a?(RStruct) ? val.instance_variable_get(:@values) : val
+    define_singleton_method(key) { val }
+  end
+
+  def initialize(hash)
+    @values = {}
+
+    hash.each do |key, value|
+      if value.is_a?(Array)
+        def_val key, value.map { |v| RStruct.wrap(v) }
+      else
+        def_val key, RStruct.wrap(value)
+      end
+    end
+  end
+
+  def inspect(pretty = false)
+    if pretty
+      JSON.pretty_generate @values
+    else
+      @values.to_json
+    end
+  end
+end
 
 module OS
   def self.windows?
@@ -161,14 +192,21 @@ class Bot
         if compressed_msg.data.empty?
           raise "Heartbeat failed"
         end
-        message = RecursiveOpenStruct.new(JSON.parse compressed_msg.data)
+        message = RStruct.new(JSON.parse compressed_msg.data)
 
         case message.op
         when OPCODES[:dispatch]
           if message.t == 'READY'
             bot.start_gateway_heartbeat(message.d.heartbeat_interval / 1000)
           end
-          bot.gateway_handle_event(message)
+          begin
+            bot.gateway_handle_event(message)
+          rescue StandardError => e
+            puts "#{e.class} raised during #{message.t}: #{e.message}"
+            e.backtrace.each do |line|
+              puts line
+            end
+          end
         else
           puts "Unhandled opcode #{message.op} (full message: #{message.to_h})"
         end
@@ -232,7 +270,7 @@ class Bot
   end
 
   def start_gateway_heartbeat(interval)
-    @heartbeat_thread Thread.new do
+    @heartbeat_thread = Thread.new do
       if @print_heartbeats
         puts "HEARTBEAT begin"
       end
@@ -286,9 +324,9 @@ class Bot
       obj = JSON.parse(body)
 
       if obj.is_a?(Array)
-        obj.map(&RecursiveOpenStruct.method(:new))
+        obj.map(&RStruct.method(:new))
       else
-        RecursiveOpenStruct.new(obj)
+        RStruct.new(obj)
       end
     else
       raise "#{method} #{File.join(@endpoint.to_s, path)}: #{response.code} #{response.message}"
