@@ -54,6 +54,7 @@ class Bot
   attr_reader :token
   attr_reader :sequence
   attr_reader :websocket
+  attr_reader :heartbeat_thread
 
   class << self
     attr_accessor :event_handlers
@@ -158,15 +159,14 @@ class Bot
 
       ws.on :message do |compressed_msg|
         if compressed_msg.data.empty?
-          puts "Empty packet!? Are we still in?"
-          next
+          raise "Heartbeat failed"
         end
         message = RecursiveOpenStruct.new(JSON.parse compressed_msg.data)
 
         case message.op
         when OPCODES[:dispatch]
           if message.t == 'READY'
-            bot.start_gateway_heartbeat(message.d.heartbeat_interval)
+            bot.start_gateway_heartbeat(message.d.heartbeat_interval / 1000)
           end
           bot.gateway_handle_event(message)
         else
@@ -177,14 +177,22 @@ class Bot
       ws.on :error do |e|
         puts "ERROR! #{e}"
         puts "The bot was logged out due to the previous error"
-        bot.instance_variable_set :@websocket, nil
+        bot.log_out
       end
 
       ws.on :close do |e|
         puts "Gateway connection closed: #{e}"
-        bot.instance_variable_set :@websocket, nil
+        bot.log_out
       end
     end
+  end
+
+  def log_out
+    @websocket.close if @websocket
+    @websocket = nil
+    @heartbeat_thread.kill if @heartbeat_thread
+    @heartbeat_thread = nil
+  rescue
   end
 
   def gateway_send(opcode, data)
@@ -224,7 +232,7 @@ class Bot
   end
 
   def start_gateway_heartbeat(interval)
-    Thread.new do
+    @heartbeat_thread Thread.new do
       if @print_heartbeats
         puts "HEARTBEAT begin"
       end

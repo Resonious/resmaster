@@ -12,7 +12,7 @@ class Resmaster < Bot
     @user = get '/users/@me'
 
     @print_event_names = true
-    @print_heartbeats  = true
+    @print_heartbeats  = false
   end
 
   def upload_avatar(filename)
@@ -28,3 +28,7 @@ class Resmaster < Bot
     puts "#{data.author.username} says #{data.content}"
   end
 end
+
+resmaster = Resmaster.new
+resmaster.log_in
+resmaster.heartbeat_thread.join
