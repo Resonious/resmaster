@@ -184,7 +184,7 @@ class Bot
           properties: {
             '$os'               => OS.name,
             '$browser'          => bot.bot_name,
-            '$devise'           => bot.bot_name,
+            '$device'           => bot.bot_name,
             '$referrer'         => '',
             '$referring_domain' => ''
           },
