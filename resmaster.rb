@@ -157,6 +157,10 @@ end
 
 if $0 != 'irb'
   r = Resmaster.new
-  sleep 5
-  r.heartbeat_thread.join
+  loop do
+    sleep 5
+    r.heartbeat_thread.join
+    puts "Re-logging in"
+    r.log_in
+  end
 end
