@@ -80,7 +80,7 @@ class Resmaster < Bot
         if chain.dictionary.size < 15
           say data, "Sorry #{data.author.username}, I don't know #{user.username} very well."
         else
-          unless /(?<count>\d)+\s+sentences/ =~ data.content.downcase
+          unless /(?<count>\d+)\s+sentences/ =~ data.content.downcase
             count = Random.rand(3) + 1
           end
 
