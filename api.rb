@@ -226,7 +226,10 @@ class Bot
 
       ws.on :message do |compressed_msg|
         if compressed_msg.data.empty?
-          raise "Heartbeat failed"
+          # Ugh
+          bot.log_out
+          bot.log_in
+          next
         end
         message = RStruct.new(JSON.parse compressed_msg.data)
 
@@ -262,10 +265,10 @@ class Bot
   end
 
   def log_out
-    @websocket.close if @websocket
-    @websocket = nil
     @heartbeat_thread.kill if @heartbeat_thread
     @heartbeat_thread = nil
+    @websocket.close if @websocket
+    @websocket = nil
   rescue
   end
 
