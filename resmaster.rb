@@ -93,7 +93,9 @@ class Resmaster < Bot
             count = Random.rand(3) + 1
           end
 
-          say @last_guild_channel_id || @last_channel_id, chain.generate_n_sentences(count.to_i)
+          say_here = /here/ =~ data.content.downcase
+          channel_id = say_here ? @last_channel_id : (@last_guild_channel_id || @last_channel_id)
+          say channel_id, chain.generate_n_sentences(count.to_i)
         end
       end
 
