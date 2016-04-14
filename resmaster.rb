@@ -170,6 +170,8 @@ if $0 != 'irb'
   loop do
     sleep 5
     r.heartbeat_thread.join
+    sleep 1
+    r.log_out unless r.websocket.nil?
     puts "Re-logging in"
     r.log_in
   end
