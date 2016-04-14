@@ -72,7 +72,7 @@ class Resmaster < Bot
     puts "Got #{data.content.inspect} from #{data.author.username}"
 
     if channel.is_private?
-      imitate_regex = /imitate\s+(<@\d+>)/
+      imitate_regex = /imitate\s+@\w+/
       execute_regex = /execute\s+`/m
     else
       imitate_regex = /<@#{@user.id}>\s+imitate\s+(<@\d+>)/
@@ -82,6 +82,10 @@ class Resmaster < Bot
     case data.content.downcase
     # "@Resmaster imitate @someone"
     when imitate_regex
+      searched_users = []
+
+      # TODO allow @Someone to search for a user when in private convo
+
       data.mentions.each do |user|
         next if user.id == @user.id
 
