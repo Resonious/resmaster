@@ -8,6 +8,7 @@ class Resmaster < Bot
   attr_reader :ready_event
   attr_reader :chain
   attr_reader :last_channel_id
+  attr_reader :last_guild_channel_id
 
   def initialize
     connect(DISCORD_API, RESMASTER_TOKEN)
@@ -67,12 +68,20 @@ class Resmaster < Bot
     post "/channels/#{channel_id}/messages", { content: msg }
   end
 
-  def respond_to_mention(data)
+  def respond_to_mention(data, channel)
     puts "Got #{data.content.inspect} from #{data.author.username}"
+
+    if channel.is_private?
+      imitate_regex = /imitate\s+(<@\d+>)/
+      execute_regex = /execute\s+`/m
+    else
+      imitate_regex = /<@#{@user.id}>\s+imitate\s+(<@\d+>)/
+      execute_regex = /<@#{@user.id}>\s+execute\s+`/m
+    end
 
     case data.content.downcase
     # "@Resmaster imitate @someone"
-    when /<@#{@user.id}>\s+imitate\s+(<@\d+>)/
+    when imitate_regex
       data.mentions.each do |user|
         next if user.id == @user.id
 
@@ -84,15 +93,16 @@ class Resmaster < Bot
             count = Random.rand(3) + 1
           end
 
-          say data, chain.generate_n_sentences(count.to_i)
+          say @last_guild_channel_id || @last_channel_id, chain.generate_n_sentences(count.to_i)
         end
       end
 
     # "@Resmaster execute `puts "code here"`"
-    when /<@#{@user.id}>\s+execute\s+`/m
+    when execute_regex
       if data.author.username == 'Resonious' || data.author.username == 'Dinkyman'
         /```(?<code>.+)```/ =~ data.content or /`(?<code>.+)`/ =~ data.content
         begin
+          msg = data
           instance_eval(code)
         rescue StandardError => e
           say data, "#{mention data.author} #{e}: #{e.message}"
@@ -127,9 +137,12 @@ class Resmaster < Bot
   on_event :MESSAGE_CREATE do |data|
     next if data.author.id == @user.id
 
-    @last_channel_id = data.channel_id
-    if data.mentions.map(&:id).include?(@user.id)
-      respond_to_mention(data)
+    channel = get "/channels/#{data.channel_id}"
+    @last_channel_id       = data.channel_id
+    @last_guild_channel_id = data.channel_id unless channel.is_private?
+
+    if channel.is_private? || data.mentions.map(&:id).include?(@user.id)
+      respond_to_mention(data, channel)
     else
       record_sentence(data)
     end

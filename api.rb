@@ -36,6 +36,7 @@ class RStruct
   def def_val(key, val)
     @values[key] = val.is_a?(RStruct) ? val.instance_variable_get(:@values) : val
     define_singleton_method(key) { val }
+    define_singleton_method("#{key}?") { !!val }
   end
 
   def initialize(hash)
