@@ -54,18 +54,23 @@ class Resmaster < Bot
     chain_for(data.author).parse_string message
   end
 
-  def say(d_or_msg, msg = nil)
-    if msg == nil
-      msg = d_or_msg
-      channel_id = @last_channel_id
-    else
-      channel_id = d_or_msg.respond_to?(:channel_id) ? d_or_msg.channel_id : d_or_msg
-    end
-    if channel_id.nil?
-      raise "Could not chat - no channel specified"
+  def say(*args)
+    if args.last.is_a?(Hash)
+      options = args.pop
     end
 
-    post "/channels/#{channel_id}/messages", { content: msg }
+    case args.size
+    when 1 
+      message = args.first
+      channel_id = @last_channel_id
+    when 2
+      message = args.last
+      channel_id = args.first
+    else
+      raise ArgumentError, "Wrong number of arguments #{args.size} instead of 1 or 2 (+ options)"
+    end
+
+    post "/channels/#{channel_id}/messages", { content: message, tts: !!options[:tts] }
   end
 
   def respond_to_mention(data, channel)
@@ -98,8 +103,11 @@ class Resmaster < Bot
           end
 
           say_here = /here/ =~ data.content.downcase
+          tts      = /\s+tts/ =~ data.content.downcase
+
           channel_id = say_here ? @last_channel_id : (@last_guild_channel_id || @last_channel_id)
-          say channel_id, chain.generate_n_sentences(count.to_i)
+
+          say channel_id, chain.generate_n_sentences(count.to_i), tts: tts
         end
       end
 
