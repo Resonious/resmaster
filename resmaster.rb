@@ -72,6 +72,10 @@ class Resmaster < Bot
       raise ArgumentError, "Wrong number of arguments #{args.size} instead of 1 or 2 (+ options)"
     end
 
+    if channel_id.respond_to?(:channel_id)
+      channel_id = channel_id.channel_id
+    end
+
     post "/channels/#{channel_id}/messages", { content: message, tts: !!options[:tts] }
   end
 
