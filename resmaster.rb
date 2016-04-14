@@ -84,7 +84,7 @@ class Resmaster < Bot
             count = Random.rand(3) + 1
           end
 
-          say data, chain.generate_n_sentences(count)
+          say data, chain.generate_n_sentences(count.to_i)
         end
       end
 
