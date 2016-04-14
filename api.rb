@@ -3,6 +3,30 @@ require 'json'
 require 'base64'
 require 'websocket-client-simple'
 
+module Permissions
+  CREATE_INSTANT_INVITE = 0x0000001 # Allows creating of instant invites
+  KICK_MEMBERS = 0x0000002 # Allows kicking members
+  BAN_MEMBERS = 0x0000004 # Allows banning members
+  MANAGE_ROLES = 0x0000008 # Allows management and editing of roles
+  MANAGE_CHANNELS = 0x0000010 # Allows management and editing of channels
+  MANAGE_GUILD = 0x0000020 # Allows management and editing of the guild
+  MANAGE_SERVER = MANAGE_GUILD
+  READ_MESSAGES = 0x0000400 # Allows reading messages in a channel. The channel will not appear for users without this permission
+  SEND_MESSAGES = 0x0000800 # Allows for sending messages in a channel.
+  SEND_TTS_MESSAGES = 0x0001000 # Allows for sending of /tts messages
+  MANAGE_MESSAGES = 0x0002000 # Allows for deleting messages
+  EMBED_LINKS = 0x0004000 # Links sent by this user will be auto-embedded
+  ATTACH_FILES = 0x0008000 # Allows for uploading images and files
+  READ_MESSAGE_HISTORY = 0x0010000 # Allows for reading messages history
+  MENTION_EVERYONE = 0x0020000 # Allows for using the @everyone tag to notify all users in a channel
+  CONNECT = 0x0100000 # Allows for joining of a voice channel
+  SPEAK = 0x0200000 # Allows for speaking in a voice channel
+  MUTE_MEMBERS = 0x0400000 # Allows for muting members in a voice channel
+  DEAFEN_MEMBERS = 0x0800000 # Allows for deafening of members in a voice channel
+  MOVE_MEMBERS = 0x1000000 # Allows for moving of members between voice channels
+  USE_VAD = 0x2000000 # Allows for using voice-activity-detection in a voice channel
+end
+
 class RStruct
   def self.wrap(x)
     return x unless x.is_a?(Hash)
@@ -114,6 +138,9 @@ class Bot
       http.verify_depth = 5
     end
     @http = http.start
+
+    log_in
+    true
   end
 
   def gzip(str)
@@ -132,9 +159,13 @@ class Bot
     unz
   end
 
-  def get(path)
+  def get(path, data = nil)
     full_path = net_path(path)
 
+    if data
+      full_path << "?"
+      full_path << URI.encode_www_form(data)
+    end
     response = @http.get(full_path, headers)
     yield response if block_given?
     return_valid_body('GET', path, response)
