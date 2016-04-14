@@ -161,6 +161,11 @@ class Bot
     "data:image/jpeg;base64,#{Base64.strict_encode64(file_bytes)}"
   end
 
+  def mention(user)
+    user_id = user.is_a?(RStruct) ? user.id : user
+    "<@#{user_id}>"
+  end
+
   def gateway_url
     @gateway_url ||= get('/gateway').url
   end
