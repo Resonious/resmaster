@@ -91,9 +91,21 @@ class Resmaster < Bot
     when imitate_regex
       searched_users = []
 
-      # TODO allow @Someone to search for a user when in private convo
+      if channel.is_private?
+        users = []
+        data.content.scan(/@\w+/).each do |match|
+          users.concat get '/users', { q: match.gsub('@', '') }
+        end
+      else
+        users = data.mentions
+      end
 
-      data.mentions.each do |user|
+      if users.empty?
+        say "Couldn't find anyone fitting your criteria."
+        return
+      end
+
+      users.each do |user|
         next if user.id == @user.id
 
         chain = chain_for(user)
