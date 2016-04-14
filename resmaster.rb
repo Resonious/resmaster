@@ -57,6 +57,8 @@ class Resmaster < Bot
   def say(*args)
     if args.last.is_a?(Hash)
       options = args.pop
+    else
+      options = {}
     end
 
     case args.size
