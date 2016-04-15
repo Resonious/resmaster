@@ -39,6 +39,8 @@ class Resmaster < Bot
         record_sentence(message)
       end
 
+      yield messages if block_given?
+
       break if messages.size < 100
       break if count >= amount
       messages = get "/channels/#{channel_id}/messages", { limit: 100, before: messages.last.id }
@@ -49,6 +51,15 @@ class Resmaster < Bot
     message = data.content.dup
     message << '.' unless message =~ /[\.\?!]$/
     if /https?:\/\/\S+/ =~ message
+      return
+    end
+    if /\[[\d:PMA]+\]/ =~ message
+      return
+    end
+    if /Like\s+·\s+Reply/ =~ message
+      return
+    end
+    if / - \d\d\/\d\d\/\d\d\d\d/ =~ message
       return
     end
     chain_for(data.author).parse_string message
