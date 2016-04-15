@@ -56,7 +56,7 @@ class Resmaster < Bot
     if /\[[\d:PMA]+\]/ =~ message
       return
     end
-    if /Like\s+·\s+Reply/ =~ message
+    if /Like . Reply/ =~ message
       return
     end
     if / - \d\d\/\d\d\/\d\d\d\d/ =~ message
