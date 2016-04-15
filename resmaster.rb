@@ -98,6 +98,7 @@ class Resmaster < Bot
       if channel.is_private?
         users = []
         data.content.scan(/@\w+/).each do |match|
+          next if match == "@#{@user.username}"
           users.concat get '/users', { q: match.gsub('@', '') }
         end
       else
@@ -166,7 +167,7 @@ class Resmaster < Bot
     @ready_event = data
   end
 
-  on_event :MESSAGE_CREATE do |data|
+  on_event :MESSAGE_CREATE, :MESSAGE_EDIT do |data|
     next if data.author.id == @user.id
 
     channel = get "/channels/#{data.channel_id}"
