@@ -58,6 +58,14 @@ class RStruct
       @values.to_json
     end
   end
+
+  def to_s
+    inspect
+  end
+
+  def to_str
+    inspect
+  end
 end
 
 module OS

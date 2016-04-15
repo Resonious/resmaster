@@ -93,16 +93,11 @@ class Resmaster < Bot
     case data.content.downcase
     # "@Resmaster imitate @someone"
     when imitate_regex
-      searched_users = []
-
+      users = data.mentions
       if channel.is_private?
-        users = []
         data.content.scan(/@\w+/).each do |match|
-          next if match == "@#{@user.username}"
-          users.concat get '/users', { q: match.gsub('@', '') }
+          users.concat get '/user/', q: match.gsbu('@', '')
         end
-      else
-        users = data.mentions
       end
 
       if users.empty?
@@ -114,14 +109,14 @@ class Resmaster < Bot
         next if user.id == @user.id
 
         chain = chain_for(user)
-        if chain.dictionary.size < 15
+        if chain.dictionary.size < 10
           say data, "Sorry #{data.author.username}, I don't know #{user.username} very well."
         else
           unless /(?<count>\d+)\s+sentences/ =~ data.content.downcase
             count = Random.rand(3) + 1
           end
 
-          say_here = /here/ =~ data.content.downcase
+          say_here = /\s+here/ =~ data.content.downcase
           tts      = /\s+tts/ =~ data.content.downcase
 
           channel_id = say_here ? @last_channel_id : (@last_guild_channel_id || @last_channel_id)
