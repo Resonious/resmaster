@@ -138,7 +138,7 @@ class Resmaster < Bot
 
     # "@Resmaster execute `puts "code here"`"
     when execute_regex
-      if data.author.username == 'Resonious' || data.author.username == 'dinkyman'
+      if data.author.username == 'Resonious' || data.author.username == 'dinkyman' || 'Ackardo'
         /```(?<code>.+)```/ =~ data.content or /`(?<code>.+)`/ =~ data.content
         begin
           msg = data
