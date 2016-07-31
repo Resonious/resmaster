@@ -1,7 +1,7 @@
 require_relative 'api'
 require 'marky_markov'
 
-RESMASTER_TOKEN = IO.read('resmaster-token.txt')
+RESMASTER_TOKEN = IO.read('resmaster-token.txt').chomp.strip
 
 class Resmaster < Bot
   attr_reader :user

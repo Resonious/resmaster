@@ -240,7 +240,14 @@ class Bot
           bot.log_in
           next
         end
-        message = RStruct.new(JSON.parse compressed_msg.data)
+
+        begin
+          message = RStruct.new(JSON.parse compressed_msg.data)
+        rescue StandardError => e
+          puts "ERROR PARSING GATEWAY MESSAGE: #{e.class.name} #{e.message}"
+          puts e.backtrace.join("\n")
+          next
+        end
 
         case message.op
         when OPCODES[:dispatch]
