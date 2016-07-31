@@ -45,6 +45,8 @@ class Resmaster < Bot
       break if count >= amount
       messages = get "/channels/#{channel_id}/messages", { limit: 100, before: messages.last.id }
     end
+
+    count
   end
 
   def record_sentence(data)
@@ -97,7 +99,7 @@ class Resmaster < Bot
       imitate_regex = /imitate\s+@\w+/
       execute_regex = /execute\s+`/m
     else
-      imitate_regex = /<@#{@user.id}>\s+imitate\s+(<@\d+>)/
+      imitate_regex = /<@#{@user.id}>\s+imitate\s+(<@[!\d]+>)/
       execute_regex = /<@#{@user.id}>\s+execute\s+`/m
     end
 
@@ -141,8 +143,9 @@ class Resmaster < Bot
       if data.author.username == 'Resonious' || data.author.username == 'dinkyman' || 'Ackardo'
         /```(?<code>.+)```/ =~ data.content or /`(?<code>.+)`/ =~ data.content
         begin
-          msg = data
+          puts "EXECUTING #{code}"
           instance_eval(code)
+          puts "FINISHED EXECUTING #{code}"
         rescue StandardError => e
           say data, "#{mention data.author} #{e}: #{e.message}"
         end
