@@ -2,6 +2,7 @@ require 'net/http'
 require 'json'
 require 'base64'
 require 'websocket-client-simple'
+require 'resolv-replace.rb'
 
 module Permissions
   CREATE_INSTANT_INVITE = 0x0000001 # Allows creating of instant invites
@@ -360,6 +361,20 @@ class Bot
     "Resmaster Engine"
   end
 
+  def wait_for_throttle!
+    if @rl_remaining <= 0
+      sleep_time = Time.at(@rl_reset) - Time.now
+
+      if sleep_time > 0
+        yield sleep_time if block_given?
+        sleep sleep_time
+      end
+
+      true
+    end
+    false
+  end
+
   protected
 
   # Used for HTTP stuff (not WS)
@@ -369,6 +384,10 @@ class Bot
   end
 
   def return_valid_body(method, path, response)
+    @rl_limit = response.header['x-ratelimit-limit'].to_i
+    @rl_remaining = response.header['x-ratelimit-remaining'].to_i
+    @rl_reset = response.header['x-ratelimit-reset'].to_i
+
     if response.code.to_i == 200
       if response.header['content-encoding'] && response.header['content-encoding'] =~ /gzip/
         body = gunzip response.body

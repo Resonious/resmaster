@@ -29,6 +29,12 @@ class Resmaster < Bot
     @chain[user.id] ||= MarkyMarkov::Dictionary.new(user.id)
   end
 
+  def read_all(channel_id)
+    s=0
+    read_up(channel_id, 1000000000000) { |m| s += m.size; puts "read #{s}" }
+    say 'done'
+  end
+
   def read_up(channel_id, amount)
     count = 0
     messages = get "/channels/#{channel_id}/messages", { limit: 100 }
@@ -43,6 +49,8 @@ class Resmaster < Bot
 
       break if messages.size < 100
       break if count >= amount
+
+      wait_for_throttle!
       messages = get "/channels/#{channel_id}/messages", { limit: 100, before: messages.last.id }
     end
 
@@ -140,7 +148,8 @@ class Resmaster < Bot
 
     # "@Resmaster execute `puts "code here"`"
     when execute_regex
-      if data.author.username == 'Resonious' || data.author.username == 'dinkyman' || 'Ackardo'
+      admins = ['Resonious', 'dinkyman']
+      if admins.include?(data.author.username)
         /```(?<code>.+)```/ =~ data.content or /`(?<code>.+)`/ =~ data.content
         begin
           puts "EXECUTING #{code}"
@@ -192,13 +201,24 @@ class Resmaster < Bot
 end
 
 if $0 != 'irb'
-  r = Resmaster.new
-  loop do
-    sleep 5
-    r.heartbeat_thread.join
-    sleep 1
-    r.log_out unless r.websocket.nil?
-    puts "Re-logging in"
-    r.log_in
+  attempts = 10
+  (1..attempts).each do |i|
+    begin
+      r = Resmaster.new
+      loop do
+        sleep 5
+        r.heartbeat_thread.join
+        sleep 1
+        r.log_out unless r.websocket.nil?
+        puts "Re-logging in"
+        r.log_in
+      end
+
+      break
+    rescue Errno::ENETUNREACH => e
+      sleep_time = attempts - i + 1
+      puts "Crashed! Recovering in #{sleep_time} seconds."
+      sleep sleep_time
+    end
   end
 end
