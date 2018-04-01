@@ -9,12 +9,22 @@ class Resmaster < Bot
   attr_reader :chain
   attr_reader :last_channel_id
   attr_reader :last_guild_channel_id
+  attr_reader :last_message_by_requester
+  attr_reader :last_message_for_user
+
+  GeneratedMessage = Struct.new(:user, :message) do
+    def to_s
+      "**#{user.username}:** #{message}"
+    end
+  end
 
   def initialize
     connect(DISCORD_API, RESMASTER_TOKEN)
 
     @user = get '/users/@me'
     @chain = {}
+    @last_message_by_requester = {}
+    @last_message_for_user = {}
     at_exit { save and log_out }
 
     @print_event_names = false
@@ -97,7 +107,7 @@ class Resmaster < Bot
       channel_id = channel_id.channel_id
     end
 
-    post "/channels/#{channel_id}/messages", { content: message, tts: !!options[:tts] }
+    post "/channels/#{channel_id}/messages", { content: message.to_s, tts: !!options[:tts] }
   end
 
   def respond_to_mention(data, channel)
@@ -106,9 +116,13 @@ class Resmaster < Bot
     if channel.type == CHANNEL_TYPES[:DM]
       imitate_regex = /imitate\s+@\w+/
       execute_regex = /execute\s+`/m
+      repeat_regex = /(repeat|say)\s+(last|message|that|again|for)/
+      help_regex = /help/
     else
       imitate_regex = /<@#{@user.id}>\s+imitate\s+(<@[!\d]+>)/
       execute_regex = /<@#{@user.id}>\s+execute\s+`/m
+      repeat_regex = /<@#{@user.id}>\s+(repeat|say)\s+(last|message|that|again|for)/
+      help_regex = /<@#{@user.id}>\s+help/
     end
 
     case data.content.downcase
@@ -118,6 +132,10 @@ class Resmaster < Bot
       if channel.type == CHANNEL_TYPES[:DM]
         data.content.scan(/@\w+/).each do |match|
           begin
+            if match == @user.id
+              say "-_- that me"
+            end
+
             users << get("/users/#{match.gsub('@', '')}")
           rescue => e
             say e.message
@@ -141,16 +159,59 @@ class Resmaster < Bot
             count = Random.rand(3) + 1
           end
 
-          say_here = /\s+here/ =~ data.content.downcase
+          in_guild = /\s+in guild/ =~ data.content.downcase
           tts      = /\s+tts/ =~ data.content.downcase
 
-          channel_id = say_here ? @last_channel_id : (@last_guild_channel_id || @last_channel_id)
+          channel_id = in_guild ? @last_guild_id : @last_channel_id
+          generated_message = GeneratedMessage.new(user, chain.generate_n_sentences(count.to_i))
 
-          say channel_id, chain.generate_n_sentences(count.to_i), tts: tts
+          last_message_by_requester[data.author.id] = generated_message
+          last_message_for_user[user.id] = generated_message
+
+          say channel_id, generated_message.message, tts: tts
         end
       end
 
+    # "@Resmaster repeat last message"
+    # "@Resmaster repeat for @whoever"
+    when repeat_regex
+      users = data.mentions.reject { |u| u.id == @user.id }
+
+      if users.empty?
+        # Say last message requested by author
+        last_message = last_message_by_requester[data.author.id]
+
+        if last_message.nil?
+          say data, "You have not asked me to imitate anyone, #{mention data.author}."
+        else
+          say data, last_message
+        end
+      else
+        # Say last imitation of given user(s)
+        users.each do |user|
+          last_message = last_message_for_user[user.id]
+
+          if last_message.nil?
+            say data, "I've got nothing from **#{user.username}**."
+          else
+            say data, last_message
+          end
+        end
+      end
+
+    when help_regex
+      say data, "Here's what I can do:"
+      topics = []
+      topics << "`@Resmaster imitate @SomeoneElse`\nI'll imitate them to the best of my ability."
+      topics << "`@Resmaster say again`\nI'll repeat the last imitation you asked me for."
+      topics << "`@Resmaster repeat for @SomeoneElse`\nI'll repeat my last imitation of @SomeoneElse."
+      say topics.join("\n\n")
+      say data, "You can DM me this stuff, too. If you want me to imitate someone in a DM, "+
+        "you'll need their ID. Send me `imitate @12345` -- where '1235' is their user ID. "+
+        "Then you can go back to the server and have me say it again for everyone's viewing pleasure."
+
     # "@Resmaster execute `puts "code here"`"
+    # TODO security lollllll anyone can change username
     when execute_regex
       admins = ['Resonious', 'dinkyman']
       if admins.include?(data.author.username)
@@ -163,11 +224,12 @@ class Resmaster < Bot
           say data, "#{mention data.author} #{e}: #{e.message}"
         end
       else
-        case Random.rand(4)
+        case Random.rand(5)
         when 0 then say data, "#{mention data.author} I'm not gonna execute code for you."
         when 1 then say data, "#{mention data.author} No."
         when 2 then say data, "#{mention data.author} Nuh uh."
         when 3 then say data, "#{mention data.author} I do not trust you."
+        when 4 then say data, "Nice try, #{mention data.author}."
         else        say data, "#{mention data.author} Would rather not."
         end
       end
