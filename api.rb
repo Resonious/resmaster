@@ -2,7 +2,6 @@ require 'net/http'
 require 'json'
 require 'base64'
 require 'websocket-client-simple'
-require 'resolv-replace.rb'
 
 module Permissions
   CREATE_INSTANT_INVITE = 0x0000001 # Allows creating of instant invites
