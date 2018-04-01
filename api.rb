@@ -136,6 +136,9 @@ class Bot
   attr_reader :websocket
   attr_reader :heartbeat_thread
 
+  class HTTPError < StandardError
+  end
+
   class << self
     attr_accessor :event_handlers
 
@@ -422,7 +425,7 @@ class Bot
         RStruct.new(obj)
       end
     else
-      raise "#{method} #{File.join(@endpoint.to_s, path)}: #{response.code} #{response.message}"
+      raise HTTPError, "#{method} #{File.join(@endpoint.to_s, path)}: #{response.code} #{response.message}"
     end
   end
 

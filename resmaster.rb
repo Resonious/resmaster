@@ -115,9 +115,13 @@ class Resmaster < Bot
     # "@Resmaster imitate @someone"
     when imitate_regex
       users = data.mentions
-      if channel.is_private?
+      if channel.type == CHANNEL_TYPES[:DM]
         data.content.scan(/@\w+/).each do |match|
-          users.concat get '/user/', q: match.gsub('@', '')
+          begin
+            users << get("/users/#{match.gsub('@', '')}")
+          rescue => e
+            say e.message
+          end
         end
       end
 
