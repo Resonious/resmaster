@@ -103,7 +103,7 @@ class Resmaster < Bot
   def respond_to_mention(data, channel)
     puts "Got #{data.content.inspect} from #{data.author.username}"
 
-    if channel.is_private?
+    if channel.type == CHANNEL_TYPES[:DM]
       imitate_regex = /imitate\s+@\w+/
       execute_regex = /execute\s+`/m
     else
@@ -117,7 +117,7 @@ class Resmaster < Bot
       users = data.mentions
       if channel.is_private?
         data.content.scan(/@\w+/).each do |match|
-          users.concat get '/user/', q: match.gsbu('@', '')
+          users.concat get '/user/', q: match.gsub('@', '')
         end
       end
 
@@ -189,10 +189,11 @@ class Resmaster < Bot
     next if data.author.id == @user.id
 
     channel = get "/channels/#{data.channel_id}"
+    #puts JSON.pretty_generate channel.to_h
     @last_channel_id       = data.channel_id
-    @last_guild_channel_id = data.channel_id unless channel.is_private?
+    @last_guild_channel_id = data.channel_id if channel.type == CHANNEL_TYPES[:GUILD_TEXT]
 
-    if channel.is_private? || data.mentions.map(&:id).include?(@user.id)
+    if channel.type == CHANNEL_TYPES[:DM] || data.mentions.map(&:id).include?(@user.id)
       respond_to_mention(data, channel)
     else
       record_sentence(data)
@@ -201,12 +202,16 @@ class Resmaster < Bot
 end
 
 if $0 != 'irb'
-  attempts = 10
+  attempts = 1000000000000
   (1..attempts).each do |i|
     begin
       r = Resmaster.new
       loop do
         sleep 5
+        if r.heartbeat_thread.nil?
+          puts "haertbeat is dead. long live resmaster"
+          exit 1
+        end
         r.heartbeat_thread.join
         sleep 1
         r.log_out unless r.websocket.nil?
@@ -217,6 +222,7 @@ if $0 != 'irb'
       break
     rescue Errno::ENETUNREACH => e
       sleep_time = attempts - i + 1
+      puts "#{e.class} #{e.message}"
       puts "Crashed! Recovering in #{sleep_time} seconds."
       sleep sleep_time
     end

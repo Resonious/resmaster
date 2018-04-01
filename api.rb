@@ -60,6 +60,10 @@ class RStruct
     end
   end
 
+  def to_h
+    @values
+  end
+
   def to_s
     inspect
   end
@@ -110,10 +114,21 @@ OPCODES = {
   resume: 6,
   reconnect: 7,
   request_guild_memebers: 8,
-  invalid_session: 9
+  invalid_session: 9,
+  gateway_hello: 10,
+  heartbeat_ack: 11
 }
 OPCODE_NAMES = OPCODES.map(&:reverse).to_h
-VERSION = "0.0.1"
+
+CHANNEL_TYPES = {
+  GUILD_TEXT: 0,
+  DM: 1,
+  GUILD_VOICE: 2,
+  GROUP_DM: 3,
+  GUILD_CATEGORY: 4
+}
+
+VERSION = "0.0.2"
 
 class Bot
   attr_reader :token
@@ -251,10 +266,13 @@ class Bot
         end
 
         case message.op
+        when OPCODES[:gateway_hello]
+          bot.start_gateway_heartbeat(message.d.heartbeat_interval / 1000)
+
+        when OPCODES[:heartbeat_ack]
+          # cool
+
         when OPCODES[:dispatch]
-          if message.t == 'READY'
-            bot.start_gateway_heartbeat(message.d.heartbeat_interval / 1000)
-          end
           begin
             bot.gateway_handle_event(message)
           rescue StandardError => e
@@ -263,6 +281,7 @@ class Bot
               puts line
             end
           end
+
         else
           puts "Unhandled opcode #{message.op} (full message: #{message.to_h})"
         end
